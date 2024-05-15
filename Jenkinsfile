@@ -1,9 +1,9 @@
-pipeline {
-    agent any
+node('haimaxy-jnlp') {
 
     environment {
     HARBOR_REGISTRY = '192.168.21.66'
     HARBOR_URL = "https://${HARBOR_REGISTRY}"
+    
     }
     stage('Prepare') {
         echo "1.Prepare Stage"
