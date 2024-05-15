@@ -1,7 +1,10 @@
-node('haimaxy-jnlp') {
+pipeline {
+    agent any
+
     environment {
     HARBOR_REGISTRY = '192.168.21.66'
-}
+    HARBOR_URL = "https://${HARBOR_REGISTRY}"
+    }
     stage('Prepare') {
         echo "1.Prepare Stage"
         checkout scm
@@ -17,13 +20,13 @@ node('haimaxy-jnlp') {
     }
     stage('Build') {
         echo "3.Build Docker Image Stage"
-        sh "docker build -t cnych/jenkins-demo:${build_tag} ."
+        sh "docker build -t ${HARBOR_REGISTRY}/asahi/jenkins-demo:${build_tag} ."
     }
     stage('Push') {
         echo "4.Push Docker Image Stage"
         withCredentials([usernamePassword(credentialsId: 'dockerHub', passwordVariable: 'dockerHubPassword', usernameVariable: 'dockerHubUser')]) {
-            sh "docker login ${HARBOR_REGISTRY} -u ${dockerHubUser} -p ${dockerHubPassword}"
-            sh "docker push cnych/jenkins-demo:${build_tag}"
+            sh "docker login ${HARBOR_URL} -u ${dockerHubUser} -p ${dockerHubPassword}"
+            sh "docker push ${HARBOR_REGISTRY}/asahi/jenkins-demo:${build_tag}"
         }
     }
     stage('Deploy') {
@@ -33,6 +36,7 @@ node('haimaxy-jnlp') {
         }
         sh "sed -i 's/<BUILD_TAG>/${build_tag}/' k8s.yaml"
         sh "sed -i 's/<BRANCH_NAME>/${env.BRANCH_NAME}/' k8s.yaml"
+        sh "sed -i 's|cnych|${HARBOR_REGISTRY}/asahi|' k8s.yaml"
         sh "kubectl apply -f k8s.yaml --record"
     }
 }
